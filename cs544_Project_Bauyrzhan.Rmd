@@ -1,0 +1,409 @@
+---
+title: "Billionaires Statistics Dataset Analysis"
+author: "Amina Bauyrzhan"
+output:
+  html_document:
+    fig_width: 8
+    code_folding: hide
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=4,
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+
+
+# Dataset Details
+
+This dataset contains statistics on the world's billionaires, including information about their businesses, industries, and personal details. It provides insights into the wealth distribution, business sectors, and demographics of billionaires worldwide. 
+This is the link to dataset https://www.kaggle.com/datasets/nelgiriyewithana/billionaires-statistics-dataset 
+
+## Objective
+
+To further explore various details about wealth distribution of billionaires. 
+
+# What are the sources of income for billionaires?
+
+The frequency chart reveals that the highest number of billionaires originate from sectors such as Finance, Technology, and Manufacturing. Conversely, sectors like Gambling, Logistics, and Telecom have the fewest number of billionaires.
+
+```{r echo=TRUE}
+library(plotly)
+data <- read.csv("/Users/aminabauyrzan/Desktop/Project/Billionaires Statistics Dataset.csv")
+
+category_frequencies <- table(data$category)
+plot <- plot_ly(x = ~category_frequencies, y = ~names(category_frequencies), type = 'bar', orientation = 'h') %>%
+  layout(title = "Frequencies of Billionaires by Source of Income",
+         xaxis = list(title = "Frequency"),
+         yaxis = list(title = "Category"),
+         bargap = 0.1)
+plot
+```
+
+
+
+# Are most of billionaires selfMade people?
+From the pie-chart its evident that there are more self_made billionaires worldwide.From the given statistics, 68% of billionaires are selfMade people.
+ 
+```{r echo=TRUE}
+selfMade_frequencies <- table(data$selfMade)
+
+plot <- plot_ly(labels = names(selfMade_frequencies), values = selfMade_frequencies, type = 'pie',
+                marker = list(colors = c("lightgrey", "dodgerblue"))) %>%
+  layout(title = "Distribution of Self-Made Billionaires")
+plot
+```
+
+
+Based on the bar chart, it's evident that in sectors such as Sports and Energy, the majority of billionaires are self-made. In contrast, sectors like Media, Telecom, and Fashion appear to have a larger number of billionaires who are not self-made.
+```{r echo=TRUE}
+selfMade_category_table <- table(data$selfMade, data$category)
+plot <- plot_ly(data = data.frame(selfMade = rep(rownames(selfMade_category_table), each = ncol(selfMade_category_table)),
+                                category = rep(colnames(selfMade_category_table), times = nrow(selfMade_category_table)),
+                                count = c(selfMade_category_table)),
+               x = ~count, y = ~category, color = ~selfMade, type = 'bar', orientation = 'h') %>%
+  layout(title = "Distribution of selfMades Across Categories",
+         xaxis = list(title = "Count"),
+         yaxis = list(title = "Category"),
+         legend = list(x = 1, y = 1),
+         bargap = 0.1)
+plot
+```
+
+##### Summary Statistics of Age for Self-Mades and Not Self-Mades
+
+
+```{r echo=TRUE}
+self_data <- data[data$selfMade == TRUE, "age"]
+self_summary <- fivenum(self_data)
+
+# Calculate the five-number summary for not self-made billionaires
+notself_data <- data[data$selfMade == FALSE, "age"]
+notself_summary <- fivenum(notself_data)
+
+sum_data <- data.frame(
+  SelfMades = self_summary,
+  NotSelfMades = notself_summary
+)
+
+rownames(sum_data) <- c("Min", "Q1", "Median", "Q3", "Max")
+sum_data
+
+```
+
+According to the chart, among not selfMades there are more lower bound outliers, meaning that there are more young not self Made billionaires. 
+```{r echo=TRUE}
+selfMade_data <- subset(data, select = c(age, selfMade))
+
+plot <- plot_ly(data = selfMade_data, x = ~selfMade, y = ~age, type = 'box', 
+               marker = list(color = "dodgerblue", opacity = 0.7)) %>%
+  layout(title = "Age Distribution Among Self-Made and Non-Self-Made Billionaires",
+         xaxis = list(title = "Self-Made"),
+         yaxis = list(title = "Age"))
+
+plot
+```
+
+
+
+# Age distribution
+
+A left-skewed distribution of age among billionaires indicates that the majority of billionaires are older, and there are fewer younger billionaires. In other words, the distribution is skewed to the left, or the "tail" of the distribution is on the left side, and the data is concentrated toward the right side.
+```{r echo=TRUE}
+
+age_distribution_plot <- ggplot(data, aes(x = age)) +
+  geom_histogram(binwidth = 5, fill = "dodgerblue") +
+  labs(title = "Age Distribution",
+       x = "Age",
+       y = "Frequency") +
+  theme_minimal()
+p <- ggplotly(age_distribution_plot)
+p
+```
+
+From the boxplots, we can see how the age is distributed in each sector. For example, it is apparent that in Fashion and Retail, there are some lower bond outliers, so sthat there are some young billionaires in this sector. The sector Technology has the lowest medianage, so sthat billionaires in this ector are in average younger than in other sectors. 
+
+```{r echo=TRUE}
+
+library(plotly)
+library(dplyr)
+
+age_boxplot <- data %>%
+  plot_ly(x = ~age, y = ~category, type = "box", orientation = "h") %>%
+  layout(
+    title = "Age Distribution by Category",
+    xaxis = list(title = "Age"),
+    yaxis = list(title = "Category")
+  )
+
+age_boxplot
+```
+
+Below is the scatterplot of age and and wealth of billionaires.
+
+```{r echo=TRUE}
+library(plotly)
+library(dplyr)
+scatterplot <- plot_ly(data, x = ~age, y = ~finalWorth, mode = "markers",
+                       type = "scatter", text = ~category, marker = list(size = 6, opacity = 0.6))
+  layout(scatterplot, 
+       title = "Scatterplot of Age vs. Wealth of Billionaires",
+       xaxis = list(title = "Age"),
+       yaxis = list(title = "Wealth"),
+       showlegend = FALSE
+)
+
+```
+
+
+
+
+
+
+# Distribution of wealth
+
+It is apparent that in all sectors the wealth distribution of billionaires is left-skewed, it indicates that the majority of individuals within each industry have lower levels of wealth, and there are fewer individuals with very high wealth.
+
+```{r echo=TRUE}
+wealth_distribution_plot <- ggplot(data, aes(x = finalWorth)) +
+  geom_histogram(binwidth = 1000, fill = "dodgerblue") +
+  labs(title = "Wealth Distribution by Industry",
+       x = "Wealth",
+       y = "Frequency") +
+  facet_wrap(~industries, scales = "free") +
+  theme_minimal()       
+p <- ggplotly(wealth_distribution_plot)
+p
+```
+
+### It's evident that there are a few outliers above, indicating the presence of extremely wealthy billionaires in each sector.
+```{r echo=TRUE}
+top_categories <- head(names(sort(table(data$category), decreasing = TRUE)), 5)
+category_top5 <- subset(data, category %in% top_categories)
+
+plot <- plot_ly(data = category_top5, x = ~category, y = ~finalWorth, type = 'box',
+               marker = list(color = "dodgerblue")) %>%
+  layout(title = "Wealth Distribution by Top 5 Categories",
+         xaxis = list(title = "Category"),
+         yaxis = list(title = "Final Worth"))
+
+plot
+```
+
+
+# Central Limit Theorem
+
+As sample size increased, standard deviation decreased, as well as the distribution turned from positively skewed to normal.
+
+```{r echo=TRUE}
+library(plotly)
+set.seed(123)
+
+samples <- 1000
+sample_sizes <- c(10, 50, 100, 1000)
+sample_means_matrix <- matrix(NA, nrow = max(sample_sizes), ncol = length(sample_sizes))
+
+plotly_plots <- list()
+
+for (i in 1:length(sample_sizes)) {
+  xbar <- numeric(samples)
+  for (j in 1:samples) {
+    xbar[j] <- mean(sample(data$finalWorth, size = sample_sizes[i], replace = FALSE))
+  }
+  sample_means_matrix[1:length(xbar), i] <- xbar
+  
+  
+  hist_plot <- ggplot() +
+    geom_histogram(aes(x = xbar), binwidth = 50, fill = "lightblue") +
+    labs(title = paste("Central Limit Theorem"),
+         x = "Sample Mean",
+         y = "Frequency") +
+    theme_minimal()
+  
+
+  plotly_plot <- ggplotly(hist_plot)
+  
+  sample_size_annotation <- list(
+    x = 0.5,
+    y = 1.1,
+    text = paste("Sample Size =", sample_sizes[i]),
+    xref = "paper",
+    yref = "paper",
+    showarrow = FALSE
+  )
+  
+  plotly_plot <- layout(plotly_plot, annotations = list(sample_size_annotation))
+  
+  plotly_plots[[i]] <- plotly_plot
+}
+
+grid_plot <- subplot(plotly_plots, nrows = 2, shareX = TRUE)
+
+grid_plot
+
+
+```
+
+# Sampling Methods
+
+```{r echo=TRUE}
+library(sampling)
+library(dplyr)
+library(plotly)
+
+category_counts <- table(data$category)
+top_5_categories <- names(sort(category_counts, decreasing = TRUE)[1:5])
+subset_data <- data[data$category %in% top_5_categories, ]
+
+# Simple Random Sampling
+s <- srswr(100, nrow(data))
+selected_rows <- which(s != 0)
+simple_random_sample <- data[selected_rows, ]
+mean_simple_random <- mean(simple_random_sample$finalWorth)
+sd_simple_random <- sd(simple_random_sample$finalWorth)
+
+# Systematic Sampling
+pik <- inclusionprobabilities(data$finalWorth, 100)
+s <- UPsystematic(pik)
+selected_rows <- which(s != 0)
+systematic_sample <- data[selected_rows, ]
+mean_systematic <- mean(systematic_sample$finalWorth)
+sd_systematic <- sd(systematic_sample$finalWorth)
+
+# Stratified Sampling
+ordered_data <- data[order(data$category, decreasing = TRUE), ]
+freq <- table(ordered_data$category)
+st.sizes <- round(100 * freq / sum(freq))
+st.2 <- strata(ordered_data, stratanames = c("category"), size = st.sizes, method = "srswor", description = FALSE)
+stratified_sample <- getdata(ordered_data, st.2)
+mean_stratified <- mean(stratified_sample$finalWorth)
+sd_stratified <- sd(stratified_sample$finalWorth)
+
+# Full Dataset
+mean_full_data <- mean(subset_data$finalWorth)
+sd_full_data <- sd(subset_data$finalWorth)
+
+# Create a summary table
+summary_table <- data.frame(
+  Sampling_Method = c("Simple Random", "Systematic", "Stratified", "Full Dataset"),
+  Mean = c(mean_simple_random, mean_systematic, mean_stratified, mean_full_data),
+  Standard_Deviation = c(sd_simple_random, sd_systematic, sd_stratified, sd_full_data)
+)
+
+# Display the summary table
+summary_table
+```
+
+
+Simple Random Sampling closely approximates the characteristics of the original dataset.The distribution, mean, and standard deviation of the sample are very similar to the original data.
+  
+Stratified Sampling is next more looks like to original data, because all categories were included, however its mean and sd differ noticeably than the original data.Stratified Sampling ensures that all categories or strata are represented in the sample. which is beneficial for analysis when subgroup-specific insights are required.It slightly differ from the original data in terms of mean and standard deviation because it prioritizes representing each category, sector in our case.
+
+Systematic Sampling may not be the best option in our case.
+It introduces potential bias if there is any pattern or periodicity in the data.The distribution, mean, and standard deviation differ a lot from the original data than other methods.
+
+
+```{r echo=TRUE}
+histogram_simple_random <- plot_ly(data = simple_random_sample, x = ~finalWorth, type = "histogram", marker = list(color = "lightblue"))
+
+histogram_systematic <- plot_ly(data = systematic_sample, x = ~finalWorth, type = "histogram", marker = list(color = "lightblue"))
+
+histogram_stratified <- plot_ly(data = stratified_sample, x = ~finalWorth, type = "histogram", marker = list(color = "lightblue"))
+
+histogram_full_data <- plot_ly(data = data, x = ~finalWorth, type = "histogram", marker = list(color = "lightblue"))
+
+# Add titles to the histograms
+histogram_simple_random <- layout(histogram_simple_random, title = "Simple Random Sampling", xaxis = list(title = "Wealth"), yaxis = list(title = "Frequency"))
+
+histogram_systematic <- layout(histogram_systematic, title = "Systematic Sampling", xaxis = list(title = "Wealth"), yaxis = list(title = "Frequency"))
+
+histogram_stratified <- layout(histogram_stratified, title = "Stratified Sampling", xaxis = list(title = "Wealth"), yaxis = list(title = "Frequency"))
+
+histogram_full_data <- layout(histogram_full_data, title = "Full Dataset", xaxis = list(title = "Wealth"), yaxis = list(title = "Frequency"))
+
+annotations <- list(
+  list(
+    x = 0.15,
+    y = 1.0,
+    text = "Simple Random Sampling",
+    xref = "paper",
+    yref = "paper",
+    xanchor = "center",
+    yanchor = "bottom",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.85,
+    y = 1.0,
+    text = "Systematic Sampling",
+    xref = "paper",
+    yref = "paper",
+    xanchor = "center",
+    yanchor = "bottom",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.15,
+    y = 0.45,
+    text = "Stratified Sampling",
+    xref = "paper",
+    yref = "paper",
+    xanchor = "center",
+    yanchor = "bottom",
+    showarrow = FALSE
+  ),
+  list(
+    x = 0.85,
+    y = 0.45,
+    text = "Full Dataset",
+    xref = "paper",
+    yref = "paper",
+    xanchor = "center",
+    yanchor = "bottom",
+    showarrow = FALSE
+  )
+)
+
+subplot(histogram_simple_random, histogram_systematic, histogram_stratified, histogram_full_data, nrows = 2, titleX = TRUE, titleY = TRUE) %>% 
+  layout(annotations = annotations)%>% 
+  layout(title = 'Sampling Methods')
+```
+
+
+
+# What are the most popular names of billionaires?
+```{r echo=TRUE}
+library(tm)
+library(wordcloud)
+
+
+corpus <- Corpus(VectorSource(data$firstName))
+
+
+corpus <- tm_map(corpus, content_transformer(tolower))
+corpus <- tm_map(corpus, removePunctuation)
+corpus <- tm_map(corpus, removeNumbers)
+corpus <- tm_map(corpus, stripWhitespace)
+
+
+tdm <- TermDocumentMatrix(corpus)
+matrix <- as.matrix(tdm)
+
+word_freq <- rowSums(matrix)
+
+word_freq_df <- data.frame(word = names(word_freq), freq = word_freq)
+
+word_freq_df <- word_freq_df[order(-word_freq_df$freq), ]
+
+wordcloud(words = word_freq_df$word, freq = word_freq_df$freq, scale=c(3,0.5), min.freq = 5, colors=brewer.pal(8, "Dark2"))
+
+```
+
+
+# Conclusion
+The conducted analysis has significantly enhanced our comprehension of billionaire-related statistics. It has provided valuable insights into the sources of wealth, income distributions, and age demographics of billionaires. Furthermore, the analysis has shed light on the most commonly occurring names among this elite group of individuals. Additionally, the exploration of various sampling techniques has contributed to a broader understanding of data analysis methods and their applications in this context. Overall, the analysis has been instrumental in unraveling key trends and patterns within the billionaire dataset.
